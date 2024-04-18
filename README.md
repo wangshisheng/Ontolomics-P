@@ -13,10 +13,10 @@ This software (online version) is available here: [https://www.omicsolution.com/
 Local installation can be found below.
 
 ## Graphical Abstract
-<img src="Figure1.png" align="center" height="378" width="900"/>
+<img src="Figure1.png" align="center" height="280" width="900"/>
 
 ## How to use
-A detailed introduction of this software can be found in the [Supplementary Notes](https://github.com/wangshisheng/Ontolomics-P/blob/main/SupplementaryNotes.pdf).
+A detailed introduction of this software can be found in the [Supplementary Notes](https://github.com/wangshisheng/Ontolomics-P/blob/master/SupplementaryNotes.pdf).
 
 ## Run it locally
 This tool is developed with R, so if you want to run it locally, you may do some preparatory work:  
