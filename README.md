@@ -2,7 +2,7 @@
 Ontolomics-P: ontology guide and data-driven analysis of mass spectrometry-based proteomics data
 
 ## Brief Description
-**<font size='5'> Ontolomics-P </font>** (**P**ost-**t**ranslational **m**odification **or**tholog align**er**) is a web-based and stand-alone tool for stands out as a versatile tool tailored for the proteomics community, 
+**<font size='5'> Ontolomics-P </font>** is a web-based and stand-alone tool for stands out as a versatile tool tailored for the proteomics community, 
 featuring a graphical user interface (GUI) to facilitate the analysis of MS-based proteomics data from ontology-driven and data-driven perspectives. This comprehensive tool incorporates four essential functions. Firstly, 
 its Topic Analysis Integration employs natural language processing to categorize topics within a document collection, building a topics database based on the Gene Ontology (GO) database for efficient retrieval of protein/gene 
 functional information. Secondly, Ontolomics-P implements topics enrichment analysis using Fisher's exact test method to identify significant associations and enrichments within the dataset. Thirdly, it includes classical GO 
