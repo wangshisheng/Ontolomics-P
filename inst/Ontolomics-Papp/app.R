@@ -249,17 +249,17 @@ ui<-renderUI(
         )
       ),
       tabPanel(
-        "Ontology-driven Results",
+        "Ontology-guide Results",
         sidebarLayout(
           sidebarPanel(
             width = 3,
             h3(
-              "Step 2: Ontology-driven Results",
+              "Step 2: Ontology-guide Results",
               tags$span(
                 id = 'span2',
                 `data-toggle` = "tooltip2",
                 title = '
-                This step aligns shows the "Ontology-driven" results.
+                This step aligns shows the "Ontology-guide" results.
                 ',
                 tags$span(class = "glyphicon glyphicon-question-sign")
               )
@@ -847,7 +847,7 @@ server<-shinyServer(function(input, output, session){
               HTML("^_^ <em>Enjoy yourself in Ontolomics-P</em> ^_^")),
           tags$hr(style="border-color: grey60;"),
           div(style="text-align:center;margin-top: 20px;font-size:100%",
-              HTML(" &copy; 2023 <a href='http://english.cd120.com/' target='_blank'>Hao Yang's Group</a>. All Rights Reserved.")),
+              HTML(" &copy; 2024 <a href='http://english.cd120.com/' target='_blank'>Hao Yang's Group</a>. All Rights Reserved.")),
           div(style="text-align:center;margin-bottom: 20px;font-size:100%",
               HTML("&nbsp;&nbsp; Created by Shisheng Wang. E-mail: <u>shishengwang@wchscu.cn</u>."))
         ),
@@ -990,7 +990,7 @@ server<-shinyServer(function(input, output, session){
         if(i==1){
           incProgress(1/3, detail = "for BP functions.")
           gotabledf1<-apply(Topic_Allx[Topic_Allx$Ontology=="BP",],1,function(x){
-            x1<-strsplit(x[4],"_")[[1]]
+            x1<-strsplit(x[5],"_")[[1]]
             mgoSim(unique(gotabledf$GO.IDs), x1, semData=SSGO_BP, measure="Wang", combine="BMA")
           })
           #incProgress(1/3, detail = "for BP functions.")
@@ -998,20 +998,21 @@ server<-shinyServer(function(input, output, session){
         if(i==2){
           incProgress(2/3, detail = "for MF functions.")
           gotabledf2<-apply(Topic_Allx[Topic_Allx$Ontology=="MF",],1,function(x){
-            x1<-strsplit(x[4],"_")[[1]]
+            x1<-strsplit(x[5],"_")[[1]]
             mgoSim(unique(gotabledf$GO.IDs), x1, semData=SSGO_MF, measure="Wang", combine="BMA")
           })
         }
         if(i==3){
           incProgress(3/3, detail = "for CC functions.")
           gotabledf3<-apply(Topic_Allx[Topic_Allx$Ontology=="CC",],1,function(x){
-            x1<-strsplit(x[4],"_")[[1]]
+            x1<-strsplit(x[5],"_")[[1]]
             mgoSim(unique(gotabledf$GO.IDs), x1, semData=SSGO_CC, measure="Wang", combine="BMA")
           })
         }
       }
     })
-    SSdata<-data.frame(Ontology=Topic_Allx$Ontology,Topics=Topic_Allx$Terms,Semantic.Similarity=c(gotabledf1,gotabledf2,gotabledf3))
+    SSdata<-data.frame(Ontology=Topic_Allx$Ontology,Topics=Topic_Allx$Terms,Semantic.Similarity=c(gotabledf1,gotabledf2,gotabledf3),
+                       Description=Topic_Allx$Description)
     SSdata<-SSdata[order(SSdata$Semantic.Similarity,decreasing = T),]
     SSdata
   })
@@ -1093,9 +1094,9 @@ server<-shinyServer(function(input, output, session){
           Topic_Allx1<-tidyr::separate_rows(Topic_Allx, GOIDs, sep ="_")
           Topic_Allx2<-base::merge(Topic_Allx1,UNIPROTidsdf1,by.x="GOIDs",by.y="GOALL",sort = F)
           if(input$origidatatype=="UniProt ID"){
-            tabdata2<-unique(Topic_Allx2[,c(4,5)])
-          }else{
             tabdata2<-unique(Topic_Allx2[,c(4,6)])
+          }else{
+            tabdata2<-unique(Topic_Allx2[,c(4,7)])
           }
           tabdata2<<-tabdata2
           yytp<-enricher(gene=unique(uploaddatax), TERM2GENE=tabdata2,minGSSize=1, maxGSSize = 500000,
