@@ -236,8 +236,8 @@ ui<-renderUI(
             tags$hr(style="border-color: grey;"),
             selectInput("origidatatype",h5("2. Data type:"),choices = c("UniProt ID","Protein Name","Noun")),
             bsTooltip("origidatatype",'Here means that what users type in or upload above. "UniProt ID" means users type in a UniProt ID or upload a table with UniProt IDs. "Protein Name" means users type in a protein name or upload a table with protein names. "Noun" means users type in a noun which they want to check, such as liver.',
-                      placement = "right",options = list(container = "body"))#,
-            #selectInput("wuzhongid",h5("3. Species:"),choices = c("9606-Human","10090-Mouse","10116-Rat"))#,
+                      placement = "right",options = list(container = "body")),
+            selectInput("wuzhongid",h5("3. Species:"),choices = c("9606-Human","10090-Mouse","10116-Rat"))#,
             #bsTooltip("origidatatype",'.',placement = "right",options = list(container = "body"))
           ),
           mainPanel(
@@ -940,7 +940,7 @@ server<-shinyServer(function(input, output, session){
   })
 
   originalgotableout<-reactive({
-    speciesid<<-strsplit("9606-Human","-")[[1]][1]#input$wuzhongid
+    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
     if(input$loadseqdatatype==1){
       proinputidsx<<-tolower(input$proinputids)
       if(proinputidsx==""){
@@ -981,8 +981,8 @@ server<-shinyServer(function(input, output, session){
     dataread
   })
   topicgotableout<-reactive({
-    speciesid<<-strsplit("9606-Human","-")[[1]][1]#input$wuzhongid
-    load(file = paste0("database/Topic_All_top20_",speciesid,".rdata"))
+    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
+    load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
     load(file = paste0("database/ForSS_",speciesid,".rdata"))
     gotabledf<<-originalgotableout()
     withProgress(message = 'Calculating Semantic Similarity', style = "notification", detail = "for BP functions.", value = 0,{
@@ -1011,7 +1011,7 @@ server<-shinyServer(function(input, output, session){
         }
       }
     })
-    SSdata<-data.frame(Ontology=Topic_Allx$Ontology,Topics=Topic_Allx$Terms,Semantic.Similarity=c(gotabledf1,gotabledf2,gotabledf3),
+    SSdata<-data.frame(Ontology=Topic_Allx$Ontology,Topics=Topic_Allx$Terms,Semantic.Similarity=round(c(gotabledf1,gotabledf2,gotabledf3)/max(c(gotabledf1,gotabledf2,gotabledf3)),4),
                        Description=Topic_Allx$Description)
     SSdata<-SSdata[order(SSdata$Semantic.Similarity,decreasing = T),]
     SSdata
@@ -1019,7 +1019,7 @@ server<-shinyServer(function(input, output, session){
   originaluploadgotableout<-reactive({
     library(clusterProfiler)
     library(simplifyEnrichment)
-    speciesid<<-strsplit("9606-Human","-")[[1]][1]#input$wuzhongid
+    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
     withProgress(message = 'Starting...', style = "notification", detail = "", value = 0,{
       for(i in 1:2){
         if(i==1){
@@ -1072,7 +1072,7 @@ server<-shinyServer(function(input, output, session){
   topicuploadgotableout<-reactive({
     library(clusterProfiler)
     library(simplifyEnrichment)
-    speciesid<<-strsplit("9606-Human","-")[[1]][1]#input$wuzhongid
+    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
     withProgress(message = 'Starting...', style = "notification", detail = "", value = 0,{
       for(i in 1:2){
         if(i==1){
@@ -1080,7 +1080,7 @@ server<-shinyServer(function(input, output, session){
           load(file = "database/GOTERMdf.rdata")
           load(file = paste0("database/UNIPROTids1_",speciesid,".rdata"))
           load(file = paste0("database/UNIPROTids2_",speciesid,".rdata"))
-          load(file = paste0("database/Topic_All_top20_",speciesid,".rdata"))
+          load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
           load(file = paste0("database/ForSS_",speciesid,".rdata"))
         }
         if(i==2){
@@ -1149,6 +1149,7 @@ server<-shinyServer(function(input, output, session){
         }else{
           cloudsizex<<-input$cloudsize
           wordnumberx<<-input$wordnumber
+          proinputidsxx<<-input$proinputids
           gotabledf<-unique(gotabledf[,c(1,5,6)])
           gotabledf1<-data.frame(Ontology=names(table(gotabledf$Ontology)),
                                  Number=as.numeric(table(gotabledf$Ontology)))
@@ -1157,7 +1158,7 @@ server<-shinyServer(function(input, output, session){
             geom_bar(stat="identity")+
             geom_text(aes(label=Number), vjust=-1,size = 4) +
             scale_fill_manual(values = colpalettes[1:3])+
-            labs(title=paste0("Keyword: ",input$proinputids))+
+            labs(title=paste0("Keyword: ",proinputidsxx))+
             theme_classic()
           gotabledf2<-gotabledf[gotabledf$Ontology=="BP",2,drop=F]%>%tidytext::unnest_tokens(word, Definition)
           gotabledf2$word <- gsub('[[:punct:]]+', '', gotabledf2$word)
@@ -1175,7 +1176,7 @@ server<-shinyServer(function(input, output, session){
           ) +
             geom_text_wordcloud_area() +
             scale_size_area(max_size = cloudsizex) +
-            labs(title=paste0("Cloud plot for ",input$proinputids," based on BP functions"))+
+            labs(title=paste0("Cloud plot for ",proinputidsxx," based on BP functions"))+
             theme_minimal()
           gotabledf3<-gotabledf[gotabledf$Ontology=="CC",2,drop=F]%>%tidytext::unnest_tokens(word, Definition)
           gotabledf3$word <- gsub('[[:punct:]]+', '', gotabledf3$word)
@@ -1193,7 +1194,7 @@ server<-shinyServer(function(input, output, session){
           ) +
             geom_text_wordcloud_area() +
             scale_size_area(max_size = cloudsizex) +
-            labs(title=paste0("Cloud plot for ",input$proinputids," based on CC functions"))+
+            labs(title=paste0("Cloud plot for ",proinputidsxx," based on CC functions"))+
             theme_minimal()
           gotabledf4<-gotabledf[gotabledf$Ontology=="MF",2,drop=F]%>%tidytext::unnest_tokens(word, Definition)
           gotabledf4$word <- gsub('[[:punct:]]+', '', gotabledf4$word)
@@ -1211,7 +1212,7 @@ server<-shinyServer(function(input, output, session){
           ) +
             geom_text_wordcloud_area() +
             scale_size_area(max_size = cloudsizex) +
-            labs(title=paste0("Cloud plot for ",input$proinputids," based on MF functions"))+
+            labs(title=paste0("Cloud plot for ",proinputidsxx," based on MF functions"))+
             theme_minimal()
           withProgress(message = 'Plotting...', style = "notification", detail = "", value = 0,{
             incProgress(1/1, detail = "Plotting for original GO functions...")
@@ -1415,7 +1416,7 @@ server<-shinyServer(function(input, output, session){
       output$originaluploadgoplot<-renderPlot({
         library(cowplot)
         library(grid)
-        load(file = paste0("database/Topic_All_top20_",speciesid,".rdata"))
+        load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
         load(file = paste0("database/ForSS_",speciesid,".rdata"))
         originaluploadgodf1<-originaluploadgodf<<-originaluploadgotableout()
         originaluploadgodf1$GeneRatio<-unlist(lapply(originaluploadgodf$GeneRatio,function(x){
@@ -1477,7 +1478,7 @@ server<-shinyServer(function(input, output, session){
         plot_grid(p1,p2,p3,p4,nrow = 2)
       })
       originaluploadgoplotout<-reactive({
-        load(file = paste0("database/Topic_All_top20_",speciesid,".rdata"))
+        load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
         load(file = paste0("database/ForSS_",speciesid,".rdata"))
         originaluploadgodf1<-originaluploadgodf<<-originaluploadgotableout()
         originaluploadgodf1$GeneRatio<-unlist(lapply(originaluploadgodf$GeneRatio,function(x){
@@ -2318,9 +2319,9 @@ server<-shinyServer(function(input, output, session){
     }
   )
   databasedataout<-reactive({
-    speciesid<<-strsplit("9606-Human","-")[[1]][1]#input$wuzhongid
+    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
     if(input$databasexz==1){
-      load(file = paste0("database/Topic_All_top20_",speciesid,".rdata"))
+      load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
       dbdata<-Topic_Allx
     }else{
       load(file = "database/GOTERMdf.rdata")
