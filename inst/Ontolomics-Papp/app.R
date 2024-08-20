@@ -11,6 +11,7 @@ library(patchwork)
 library(dplyr)
 library(GOSemSim)
 library(openxlsx)
+library(plotly)
 ##
 cptacdatanames<-c(#"PDC000109_Prospective.Colon.VU_Colon.Adenocarcinoma_Proteome",
                   "PDC000116_Prospective.Colon.PNNL_Colon.Adenocarcinoma_Proteome",
@@ -450,7 +451,10 @@ ui<-renderUI(
                   plotOutput("boxheatplot",height="800"),
                   h4("A.2. The protein(s) that users type in or upload in the Step 1 is/are displayed in the volcano plot:"),
                   downloadButton("volcanoplotdl","Download"),
-                  plotOutput("volcanoplot",height="800")
+                  plotlyOutput("volcanoplot",height="800"),
+                  h4("A.3. The gene co-expression network analysis based on expression profiles:"),
+                  downloadButton("conetworkplotdl","Download"),
+                  plotOutput("conetworkplot",height="800")
                 ),
                 conditionalPanel(
                   condition = "input.resultsxuanze2==2",
@@ -1978,7 +1982,7 @@ server<-shinyServer(function(input, output, session){
         }
       )
       ##
-      output$volcanoplot<-renderPlot({
+      output$volcanoplot<-renderPlotly({
         datadrivendf<<-datadrivendfout()
         if(is.null(datadrivendf)){
           plot(c(0,0),axes = FALSE,type="n",xlab="",ylab="",
@@ -2059,14 +2063,17 @@ server<-shinyServer(function(input, output, session){
                   }
                 }
                 volcanorawdatax<<-volcanorawdata
-                volcanorawdatax1<-volcanorawdata[,c("Fold.Change","p.adjust","Threshold","label","markedcol","markedsize","pointshape")]
-                volcanorawdata1<-volcanorawdatax1[markedcolindex,]
+                volcanorawdatax1<<-volcanorawdatax2<-volcanorawdata[,c("Fold.Change","p.adjust","Threshold","label","markedcol","markedsize","pointshape")]
+                volcanorawdata1<<-volcanorawdatax2[markedcolindex,]
                 volcanocolx<<-isolate(strsplit(input$volcanocol,";")[[1]])
-                ppi<-ggplot(data=volcanorawdatax1,aes(x=Fold.Change,y=-log10(p.adjust)))+
+                volcanorawdatax1$label<-paste0("GeneName:",rownames(volcanorawdatax1),"\n","FC: ",
+                                               round(volcanorawdatax1$Fold.Change,4),"\n",
+                                               "P.adj: ",round(volcanorawdatax1$p.adjust,4))
+                ppi<-ggplot(data=volcanorawdatax1,aes(x=Fold.Change,y=-log10(p.adjust),text = label))+
                   theme_bw()+
                   theme(panel.grid.minor = element_blank() ,panel.grid.major = element_blank())+
-                  geom_point(aes(colour = Threshold,shape=Threshold),alpha = 0.5)+
-                  geom_point(data = volcanorawdata1,shape = volcanorawdata1$pointshape,
+                  geom_point(aes(colour = Threshold,shape=Threshold),alpha = 0.5,show.legend = F)+
+                  geom_point(data = volcanorawdata1,shape = volcanorawdata1$pointshape,show.legend = F,
                              size = volcanorawdata1$markedsize,color = volcanorawdata1$markedcol)+
                   geom_hline(yintercept =-log10(volcanopval),col="grey",lty=2,lwd=0.8)+
                   geom_vline(xintercept =volcanofcsmall,col="grey",lty=2,lwd=0.8)+
@@ -2084,15 +2091,17 @@ server<-shinyServer(function(input, output, session){
                   geom_text(data = volcanorawdata1,aes(label = label),size = 3, show.legend = FALSE)+
                   xlab("Fold Change (log2)") + ylab("P Value (-log10)") +ggtitle(studynamesxi)
               }
-              pplotlist[[i]]<-ppi
+              pplotlist[[i]]<-ggplotly(ppi, tooltip = "text")#ppi#
             }
-            pplotlistx<<-pplotlist
+            pplotlistvolx<<-pplotlist
             withProgress(message = 'Plotting...', style = "notification", detail = "", value = 0,{
               incProgress(1/1, detail = "Plotting...")
               if(length(studynamesx)>1){
-                ggarrange(plotlist = pplotlist,ncol = 2,nrow = ceiling(length(studynamesx)/2))
+                #ggarrange(plotlist = pplotlist,ncol = 2,nrow = ceiling(length(studynamesx)/2))
+                subplot(pplotlist,nrows = ceiling(length(studynamesx)/2))
               }else{
-                ggarrange(plotlist = pplotlist,ncol = 1)
+                #ggarrange(plotlist = pplotlist,ncol = 1)
+                subplot(pplotlist)
               }
             })
             #if(length(studynamesx)>1){
@@ -2314,6 +2323,200 @@ server<-shinyServer(function(input, output, session){
         filename = function(){paste("DataDriven.ResultTable.",usertimenum,".xlsx",sep="")},
         content = function(file){
           write.xlsx(volcanoplotdataout(),file,rowNames=TRUE)
+        }
+      )
+      ##
+      output$conetworkplot<-renderPlot({
+        #library(qgraph)
+        #load(file = paste0("database/MEGENA.cancer.output.rdata"))
+        #studynamesx<<-isolate(input$studynames)
+        #plotindex<-grep(studynamesx[length(studynamesx)],names(pplotlist),ignore.case = T)
+        #if(is.null(pplotlist[[plotindex]])){
+        #  ggplot() +
+        #    theme_void() +
+        #    geom_text(aes(0,0,label=paste0('NO protein found in the ',studynamesx[length(studynamesx)]))) +
+        #    xlab(NULL)
+        #}else{
+        #  qgraph(pplotlist[[plotindex]],labels=T,title=studynamesx[length(studynamesx)])
+        #}
+        datadrivendf<<-datadrivendfout()
+        if(is.null(datadrivendf)){
+          plot(c(0,0),axes = FALSE,type="n",xlab="",ylab="",
+               main = "Nothing here, please check whether you have typed in a proper keyword!")
+        }else{
+          studynamesx<<-isolate(input$studynames)
+          if(is.null(studynamesx)){
+            plot(c(0,0),axes = FALSE,type="n",xlab="",ylab="",
+                 main = "Nothing here, please select at least one study database!")
+          }else{
+            library(ggpubr)
+            library(igraph)
+            library(ggraph)
+            pplotlist<-list()
+            for(i in 1:length(studynamesx)){
+              studynamesxi<<-studynamesx[i]
+              load(file = paste0("CPTACdatabase/",studynamesxi,".rdata"))
+              cptacmatrix_All<<-cptacmatrix_All
+              cptacsamples_All<<-cptacsamples_All
+              if(strsplit(studynamesxi,"_")[[1]][1]=="PDC000109"){
+                cptacmatrix_All1<<-10^cptacmatrix_All
+              }else{
+                cptacmatrix_All1<<-2^cptacmatrix_All
+              }
+              cptacmatrix_All2<-sweep(cptacmatrix_All1,2,apply(cptacmatrix_All1, 2, median,na.rm=T),FUN = "/")
+              if(input$datalogif){
+                cptacmatrix_All3x<<-as.data.frame(log2(cptacmatrix_All2))
+              }else{
+                cptacmatrix_All3x<<-as.data.frame(cptacmatrix_All2)
+              }
+              cptacmatrix_All3x1<-impute.knn(as.matrix(cptacmatrix_All3x),k = 10,rowmax = 0.9, colmax = 0.9)
+              cptacmatrix_All3<-as.data.frame(cptacmatrix_All3x1$data)
+              datadrivendf1<-cptacmatrix_All3[rownames(cptacmatrix_All3)%in%c(datadrivendf$UniProt.IDs,datadrivendf$Symbol),]
+              if(nrow(datadrivendf1)==0){
+                ppi<-ggplot() +
+                  theme_void() +
+                  geom_text(aes(0,0,label=paste0('NO protein found in the ',studynamesxi))) +
+                  xlab(NULL)
+              }else{
+                datapro_tianchong<-cptacmatrix_All3
+                datafenzudf<-cptacsamples_All
+                colnames(datafenzudf)<-c("sample","class")
+                aax<-cor(t(datadrivendf1),t(cptacmatrix_All3),method = "spearman")
+                aax1<-reshape2::melt(aax)
+                #aax2<-aax1[abs(aax1$value)>=0.85,]
+                #if(nrow(aax2)==1){
+                #  aax2<-aax1[abs(aax1$value)>=0.65,]
+                #}
+                #if(nrow(aax2)==1){
+                #  aax2<-aax1[abs(aax1$value)>=0.4,]
+                #}
+                aax1<-aax1[as.character(aax1$Var1)!=as.character(aax1$Var2),]
+                aax2<-aax1[order(abs(aax1$value),decreasing = TRUE),]
+                aax2<-aax2[1:50,]
+                graph_cors<-graph_from_data_frame(aax2,directed = F)
+                ppi<-ggraph(graph_cors, layout = "stress") +
+                  geom_edge_link(aes(edge_alpha = abs(value), edge_width = abs(value), color = value)) +
+                  guides(edge_alpha = "none", edge_width = "none") +
+                  scale_edge_colour_gradientn(limits = c(-1, 1), name="Correlation (rho)",
+                                              colors = c("dodgerblue2","firebrick2")) +
+                  geom_node_point(color = "white", size = 5) +
+                  geom_node_text(aes(label = name), repel = TRUE) +
+                  theme_void()+
+                  #theme(panel.grid.minor = element_blank() ,panel.grid.major = element_blank())+
+                  ggtitle(studynamesxi)
+              }
+              pplotlist[[i]]<-ppi
+            }
+            pplotlistx<<-pplotlist
+            withProgress(message = 'Plotting network...', style = "notification", detail = "", value = 0,{
+              incProgress(1/1, detail = "Plotting...")
+              if(length(studynamesx)>1){
+                ggarrange(plotlist = pplotlist,ncol = 2,nrow = ceiling(length(studynamesx)/2))
+              }else{
+                ggarrange(plotlist = pplotlist,ncol = 1)
+              }
+            })
+          }
+        }
+      })
+      conetworkplotout<-reactive({
+        #library(qgraph)
+        #load(file = paste0("database/MEGENA.cancer.output.rdata"))
+        #studynamesx<<-isolate(input$studynames)
+        #plotindex<-grep(studynamesx[length(studynamesx)],names(pplotlist),ignore.case = T)
+        #if(is.null(pplotlist[[plotindex]])){
+        #  ggplot() +
+        #    theme_void() +
+        #    geom_text(aes(0,0,label=paste0('NO protein found in the ',studynamesx[length(studynamesx)]))) +
+        #    xlab(NULL)
+        #}else{
+        #  qgraph(pplotlist[[plotindex]],labels=T,title=studynamesx[length(studynamesx)])
+        #}
+        datadrivendf<<-datadrivendfout()
+        if(is.null(datadrivendf)){
+          plot(c(0,0),axes = FALSE,type="n",xlab="",ylab="",
+               main = "Nothing here, please check whether you have typed in a proper keyword!")
+        }else{
+          studynamesx<<-isolate(input$studynames)
+          if(is.null(studynamesx)){
+            plot(c(0,0),axes = FALSE,type="n",xlab="",ylab="",
+                 main = "Nothing here, please select at least one study database!")
+          }else{
+            library(ggpubr)
+            library(ggraph)
+            pplotlist<-list()
+            for(i in 1:length(studynamesx)){
+              studynamesxi<<-studynamesx[i]
+              load(file = paste0("CPTACdatabase/",studynamesxi,".rdata"))
+              cptacmatrix_All<<-cptacmatrix_All
+              cptacsamples_All<<-cptacsamples_All
+              if(strsplit(studynamesxi,"_")[[1]][1]=="PDC000109"){
+                cptacmatrix_All1<<-10^cptacmatrix_All
+              }else{
+                cptacmatrix_All1<<-2^cptacmatrix_All
+              }
+              cptacmatrix_All2<-sweep(cptacmatrix_All1,2,apply(cptacmatrix_All1, 2, median,na.rm=T),FUN = "/")
+              if(input$datalogif){
+                cptacmatrix_All3x<<-as.data.frame(log2(cptacmatrix_All2))
+              }else{
+                cptacmatrix_All3x<<-as.data.frame(cptacmatrix_All2)
+              }
+              cptacmatrix_All3x1<-impute.knn(as.matrix(cptacmatrix_All3x),k = 10,rowmax = 0.9, colmax = 0.9)
+              cptacmatrix_All3<-as.data.frame(cptacmatrix_All3x1$data)
+              datadrivendf1<-cptacmatrix_All3[rownames(cptacmatrix_All3)%in%c(datadrivendf$UniProt.IDs,datadrivendf$Symbol),]
+              if(nrow(datadrivendf1)==0){
+                ppi<-ggplot() +
+                  theme_void() +
+                  geom_text(aes(0,0,label=paste0('NO protein found in the ',studynamesxi))) +
+                  xlab(NULL)
+              }else{
+                datapro_tianchong<-cptacmatrix_All3
+                datafenzudf<-cptacsamples_All
+                colnames(datafenzudf)<-c("sample","class")
+                aax<-cor(t(datadrivendf1),t(cptacmatrix_All3),method = "spearman")
+                aax1<-reshape2::melt(aax)
+                #aax2<-aax1[abs(aax1$value)>=0.85,]
+                #if(nrow(aax2)==1){
+                #  aax2<-aax1[abs(aax1$value)>=0.65,]
+                #}
+                #if(nrow(aax2)==1){
+                #  aax2<-aax1[abs(aax1$value)>=0.4,]
+                #}
+                aax1<-aax1[as.character(aax1$Var1)!=as.character(aax1$Var2),]
+                aax2<-aax1[order(abs(aax1$value),decreasing = TRUE),]
+                aax2<-aax2[1:50,]
+                graph_cors<-graph_from_data_frame(aax2,directed = F)
+                ppi<-ggraph(graph_cors, layout = "stress") +
+                  geom_edge_link(aes(edge_alpha = abs(value), edge_width = abs(value), color = value)) +
+                  guides(edge_alpha = "none", edge_width = "none") +
+                  scale_edge_colour_gradientn(limits = c(-1, 1), name="Correlation (rho)",
+                                              colors = c("dodgerblue2","firebrick2")) +
+                  geom_node_point(color = "white", size = 5) +
+                  geom_node_text(aes(label = name), repel = TRUE) +
+                  theme_void()+
+                  #theme(panel.grid.minor = element_blank() ,panel.grid.major = element_blank())+
+                  ggtitle(studynamesxi)
+              }
+              pplotlist[[i]]<-ppi
+            }
+            pplotlistx<<-pplotlist
+            withProgress(message = 'Plotting network...', style = "notification", detail = "", value = 0,{
+              incProgress(1/1, detail = "Plotting...")
+              if(length(studynamesx)>1){
+                ggarrange(plotlist = pplotlist,ncol = 2,nrow = ceiling(length(studynamesx)/2))
+              }else{
+                ggarrange(plotlist = pplotlist,ncol = 1)
+              }
+            })
+          }
+        }
+      })
+      output$conetworkplotdl<-downloadHandler(
+        filename = function(){paste("CoexpressionNetwork.plot.",usertimenum,".pdf",sep="")},
+        content = function(file){
+          pdf(file, width = 16,height = 16)
+          print(conetworkplotout())
+          dev.off()
         }
       )
     }
