@@ -1,4 +1,4 @@
-# PTMoreR<img src="Ontolomics-P_logo.png" align="right" height="200" width="200"/>
+# Ontolomics-P<img src="Ontolomics-P_logo.png" align="right" height="200" width="200"/>
 Ontolomics-P: ontology guide and data-driven analysis of mass spectrometry-based proteomics data
 
 ## Brief Description
