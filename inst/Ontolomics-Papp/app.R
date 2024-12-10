@@ -1,3 +1,4 @@
+##Loading packages, if you can not load package, please install them first.
 library(shiny)
 library(shinyjs)
 library(shinyWidgets)
@@ -6,13 +7,12 @@ library(DT)
 library(data.table)
 library(ggsci)
 library(ggplot2)
-#library(ggrepel)
 library(patchwork)
 library(dplyr)
 library(GOSemSim)
 library(openxlsx)
 library(plotly)
-##
+##Cancer datasets downloaded from CPTAC database
 cptacdatanames<-c(#"PDC000109_Prospective.Colon.VU_Colon.Adenocarcinoma_Proteome",
                   "PDC000116_Prospective.Colon.PNNL_Colon.Adenocarcinoma_Proteome",
                   "PDC000120_Prospective.Breast.BI.Proteome_Breast.Invasive.Carcinoma_Proteome",
@@ -27,11 +27,13 @@ cptacdatanames<-c(#"PDC000109_Prospective.Colon.VU_Colon.Adenocarcinoma_Proteome
                   "PDC000270_CPTAC.PDA.Discovery.Study_Pancreatic.Ductal.Adenocarcinoma_Proteome",
                   "PDC000360_PTRC.HGSOC.FFPE.Discovery_Ovarian.Serous.Cystadenocarcinoma_Proteome",
                   "PDC000362_PTRC.HGSOC.Frozen.Validation_Ovarian.Serous.Cystadenocarcinoma_Proteome")
-#
+##UI for Ontolomics-P, rendering reactive HTML using the Shiny UI library.
 ui<-renderUI(
   fluidPage(
+    ##Adding the title of the tool
     title="Ontolomics-P",
     shinyjs::useShinyjs(),
+    ##adding logo
     fluidRow(div(
       HTML(
         "<div style='text-align:center;margin-top:20px;margin-right:0px'>
@@ -40,122 +42,169 @@ ui<-renderUI(
           </div>"
       )
     )),
+    ## Creates a list of HTML tags to be included in the Shiny app UI
     tagList(
+      # Creates a list of HTML tags to be included in the Shiny app UI.
       tags$head(
-        tags$link(rel="stylesheet", type="text/css",href="busystyle.css"),
-        tags$script(type="text/javascript", src = "busy.js"),
-        tags$style(type="text/css", "
-                           #loadmessage {
-                     position: fixed;
-                     top: 0px;
-                     left: 0px;
-                     width: 100%;
-                     height:100%;
-                     padding: 250px 0px 5px 0px;
-                     text-align: center;
-                     font-weight: bold;
-                     font-size: 100px;
-                     color: #000000;
-                     background-color: #D6D9E4;
-                     opacity:0.6;
-                     z-index: 105;
-                     }
-                     "),
-        tags$script('
-                            var dimension = [0, 0];
-                    $(document).on("shiny:connected", function(e) {
-                    dimension[0] = window.innerWidth;
-                    dimension[1] = window.innerHeight;
-                    Shiny.onInputChange("dimension", dimension);
-                    });
-                    $(window).resize(function(e) {
-                    dimension[0] = window.innerWidth;
-                    dimension[1] = window.innerHeight;
-                    Shiny.onInputChange("dimension", dimension);
-                    });
-                    '),
-        tags$style(type="text/css", "
-                   #tooltip {
-			position: absolute;
-			border: 1px solid #333;
-			background: #fff;
-			padding: 1px;
-			color: #333;
-      display: block;
-      width:300px;
-      z-index:5;
-		}
-                   "),#F5F5DC
-        tags$style(type="text/css", "
-                   #tooltip2 {
-			position: absolute;
-			border: 1px solid #333;
-			background: #fff;
-			padding: 1px;
-			color: #333;
-      display: block;
-      width:300px;
-      z-index:5;
-		}
-                   "),
-        tags$style(type="text/css", "
-                   #tooltip3 {
-			position: absolute;
-			border: 1px solid #333;
-			background: #fff;
-			padding: 1px;
-			color: #333;
-      display: block;
-      width:300px;
-      z-index:5;
-		}
-                   "),
-        tags$style(type="text/css", "
-                   #tooltip4 {
-			position: absolute;
-			border: 1px solid #333;
-			background: #fff;
-			padding: 1px;
-			color: #333;
-      display: block;
-      width:300px;
-      z-index:5;
-		}
-                   "),
-        tags$style(type="text/css", "
-                   #tooltip5 {
-			position: absolute;
-			border: 1px solid #333;
-			background: #fff;
-			padding: 1px;
-			color: #333;
-      display: block;
-      width:300px;
-      z-index:5;
-		}
-                   "),
-        tags$style(type="text/css", "
-                   #tooltip6 {
-			position: absolute;
-			border: 1px solid #333;
-			background: #fff;
-			padding: 1px;
-			color: #333;
-      display: block;
-      width:300px;
-      z-index:5;
-		}
-                   ")
+        # Specifies elements to be included in the <head> section of the HTML document.
+
+        tags$link(
+          # Includes an external CSS file for styling.
+          rel = "stylesheet",
+          type = "text/css",
+          href = "busystyle.css"
+        ),
+        tags$script(
+          # Includes an external JavaScript file for additional functionality.
+          type = "text/javascript",
+          src = "busy.js"
+        ),
+        tags$style(
+          # Inline CSS for defining the appearance of the loading message.
+          type = "text/css",
+          "
+      #loadmessage {
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+        padding: 250px 0px 5px 0px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 100px;
+        color: #000000;
+        background-color: #D6D9E4;
+        opacity: 0.6;
+        z-index: 105;
+      }
+      "
+        ),
+        tags$script(
+          # JavaScript for detecting screen dimensions and resizing events. Sends updates to the Shiny server.
+          '
+      var dimension = [0, 0];
+      $(document).on("shiny:connected", function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+      });
+      $(window).resize(function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+      });
+      '
+        ),
+        tags$style(
+          # Inline CSS for defining the appearance of a tooltip element (ID: tooltip).
+          type = "text/css",
+          "
+      #tooltip {
+        position: absolute;
+        border: 1px solid #333;
+        background: #fff;
+        padding: 1px;
+        color: #333;
+        display: block;
+        width: 300px;
+        z-index: 5;
+      }
+      "
+        ),
+        tags$style(
+          # Inline CSS for another tooltip element (ID: tooltip2).
+          type = "text/css",
+          "
+      #tooltip2 {
+        position: absolute;
+        border: 1px solid #333;
+        background: #fff;
+        padding: 1px;
+        color: #333;
+        display: block;
+        width: 300px;
+        z-index: 5;
+      }
+      "
+        ),
+        tags$style(
+          # Inline CSS for a tooltip element (ID: tooltip3).
+          type = "text/css",
+          "
+      #tooltip3 {
+        position: absolute;
+        border: 1px solid #333;
+        background: #fff;
+        padding: 1px;
+        color: #333;
+        display: block;
+        width: 300px;
+        z-index: 5;
+      }
+      "
+        ),
+        tags$style(
+          # Inline CSS for a tooltip element (ID: tooltip4).
+          type = "text/css",
+          "
+      #tooltip4 {
+        position: absolute;
+        border: 1px solid #333;
+        background: #fff;
+        padding: 1px;
+        color: #333;
+        display: block;
+        width: 300px;
+        z-index: 5;
+      }
+      "
+        ),
+        tags$style(
+          # Inline CSS for a tooltip element (ID: tooltip5).
+          type = "text/css",
+          "
+      #tooltip5 {
+        position: absolute;
+        border: 1px solid #333;
+        background: #fff;
+        padding: 1px;
+        color: #333;
+        display: block;
+        width: 300px;
+        z-index: 5;
+      }
+      "
+        ),
+        tags$style(
+          # Inline CSS for a tooltip element (ID: tooltip6).
+          type = "text/css",
+          "
+      #tooltip6 {
+        position: absolute;
+        border: 1px solid #333;
+        background: #fff;
+        padding: 1px;
+        color: #333;
+        display: block;
+        width: 300px;
+        z-index: 5;
+      }
+      "
+        )
       )
     ),
-
+    ## Defining a panel that is conditionally displayed based on the specified JavaScript condition
     conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                      tags$div(h2(strong("Calculating......")),img(src="rmd_loader.gif"),id="loadmessage")),
     tabsetPanel(
+      ##Welcome page
       tabPanel(
         "Welcome",
-        uiOutput("welcomeui")
+        uiOutput("welcomeui"),
+        icon = icon("home")
       ),
+      ##Page for Step 1: Import Data
       tabPanel(
         "Import Data",
         sidebarLayout(
@@ -167,7 +216,7 @@ ui<-renderUI(
                 id = 'span1',
                 `data-toggle` = "tooltip",
                 title = '
-                In this part, users can type in a UniProt ID/protein name/noun or upload their own proteome expression matrix. The example data were obtained in the "" part.
+                In this part, users can type in a UniProt ID/gene name/noun or upload their own proteome expression matrix. The example data were obtained in the "" part.
                 ',
                 tags$span(class = "glyphicon glyphicon-question-sign")
               )
@@ -183,17 +232,9 @@ ui<-renderUI(
               inline = TRUE
             ),
             hr(),
-            #radioButtons(
-            #  "loadseqdatatype",
-            #  label = "",
-            #  choices = list("Import modified sequences" = 1,"Load example data"=2),
-            #  selected = 1,
-            #  inline = TRUE
-            #),
-            #tags$hr(style="border-color: grey;"),
             conditionalPanel(
               condition = "input.loadseqdatatype==1",
-              textInput("proinputids",h5("1. Please type in a protein name/UniProt ID/noun:"),value="",width = NULL, placeholder = 'e.g. P04217, A1BG or liver')
+              textInput("proinputids",h5("1. Please type in a gene name/UniProt ID/noun:"),value="",width = NULL, placeholder = 'e.g. P04217, A1BG or liver')
             ),
             conditionalPanel(
               condition = "input.loadseqdatatype==2",
@@ -235,8 +276,8 @@ ui<-renderUI(
               downloadButton("loadseqdatadownload1","1. Download example data from Rat",style="color: #fff; background-color: #6495ED; border-color: #6495ED")
             ),
             tags$hr(style="border-color: grey;"),
-            selectInput("origidatatype",h5("2. Data type:"),choices = c("UniProt ID","Protein Name","Noun")),
-            bsTooltip("origidatatype",'Here means that what users type in or upload above. "UniProt ID" means users type in a UniProt ID or upload a table with UniProt IDs. "Protein Name" means users type in a protein name or upload a table with protein names. "Noun" means users type in a noun which they want to check, such as liver.',
+            selectInput("origidatatype",h5("2. Data type:"),choices = c("UniProt ID","Gene Name","Noun")),
+            bsTooltip("origidatatype",'Here means that what users type in or upload above. "UniProt ID" means users type in a UniProt ID or upload a table with UniProt IDs. "Gene Name" means users type in a gene name or upload a table with gene names. "Noun" means users type in a noun which they want to check, such as liver.',
                       placement = "right",options = list(container = "body")),
             selectInput("wuzhongid",h5("3. Species:"),choices = c("9606-Human","10090-Mouse","10116-Rat"))#,
             #bsTooltip("origidatatype",'.',placement = "right",options = list(container = "body"))
@@ -247,8 +288,10 @@ ui<-renderUI(
             h4("Data view:"),
             dataTableOutput("seqrawdata")
           )
-        )
+        ),
+        icon = icon("upload")
       ),
+      ##Here shows Ontology-guide Results
       tabPanel(
         "Ontology-guide Results",
         sidebarLayout(
@@ -265,19 +308,6 @@ ui<-renderUI(
                 tags$span(class = "glyphicon glyphicon-question-sign")
               )
             ),
-            #div(id="seqalignif_div",checkboxInput('seqalignif', '1. Pre-aligned or not?', TRUE)),
-            #bsTooltip("seqalignif_div","Whether to pre-align your sequences. If your sequences are standard (e.g. 15 length amino acids), you can unselect this parameter. Default is true.",
-            #          placement = "right",options = list(container = "body")),
-            #div(id="classicmultisiteif_div",checkboxInput('classicmultisiteif', '2. Classical multiple sites analysis or not?', TRUE)),
-            #bsTooltip("classicmultisiteif_div",'Whether to process classical analysis. Classical analysis means not replacing the other modified sites with letter "Z" after pre-alignment, for example "TSLWNPT#Y#GSWFTEK" to "TSLWNPTYGSWFTEK", not to "TSLWNPZYGSWFTEK". If true, do not process transformation, otherwise, transformation.',
-            #          placement = "right",options = list(container = "body")),
-            #div(id="seqalignhanif_div",checkboxInput('seqalignhanif', '2. Check if containing some regular sequence?', FALSE)),
-            #bsTooltip("seqalignhanif_div",'If users want to check whether the aligned peptides contain some specific sequences, for example, you want to find those peptides whose 3th and 5th position are R (arginine), then you can select this parameter and type in a simple regular expression, like "^\\\\w{2}R\\\\w{1}R". Otherwise, you just unselect it.',
-            #          placement = "right",options = list(container = "body")),
-            #conditionalPanel(
-            #  condition = "input.seqalignhanif==true",
-            #  textInput("seqalignhan",h5("Regular expression:"),value = "^\\w{2}R\\w{1}R")
-            #),
             tags$hr(style="border-color: grey;"),
             conditionalPanel(
               condition = "input.loadseqdatatype==1",
@@ -290,9 +320,6 @@ ui<-renderUI(
             ),
             conditionalPanel(
               condition = "input.loadseqdatatype==2",
-              #numericInput("wordnumber",h5("1. Minimum word number:"),value = 3),
-              #bsTooltip("wordnumber",'Those words below this number will not be shown in the cloud plot.',
-              #          placement = "right",options = list(container = "body")),
               numericInput("padjustval",h5("1. Adjusted P value:"),value = 1),
               bsTooltip("padjustval",'The threshold of BH-adjusted P value.',
                         placement = "right",options = list(container = "body")),
@@ -329,7 +356,10 @@ ui<-renderUI(
                     plotOutput("originalgoplot",height="800"),
                     h4("A.2. Original GO function table based on the keyword that users type in:"),
                     downloadButton("originalgotabledl","Download"),
-                    dataTableOutput("originalgotable")
+                    dataTableOutput("originalgotable"),
+                    h4("A.3. Word frequency table of the word clouds in A.1. above:"),
+                    downloadButton("wordfreqtabledl","Download"),
+                    dataTableOutput("wordfreqtable")
                   ),
                   conditionalPanel(
                     condition = "input.resultsxuanze==2",
@@ -378,8 +408,10 @@ ui<-renderUI(
               )
             )
           )
-        )
+        ),
+        icon = icon("table")
       ),
+      ##Here shows Data-driven Results
       tabPanel(
         "Data-driven Results",
         sidebarLayout(
@@ -397,14 +429,6 @@ ui<-renderUI(
               )
             ),
             tags$hr(style="border-color: grey;"),
-            #numericInput("wordnumber",h5("1. Minimum word number:"),value = 3),
-            #bsTooltip("wordnumber",'Those words below this number will not be shown in the cloud plot.',
-            #          placement = "right",options = list(container = "body")),
-            #numericInput("cloudsize",h5("2. Cloud area size:"),value = 18),
-            #bsTooltip("cloudsize",'The area size of cloud plot.',
-            #          placement = "right",options = list(container = "body")),
-            #selectInput("quantitationtype",h5("1. Quantitation type:"),choices = c("All","Unshared")),
-            #bsTooltip("quantitationtype",'All: Average, normalized log-ratio of reporter ion intensity to ion intensity from a pooled, common reference associated with the gene in acquisitions from a specific aliquot of a biological sample. Unshared: Average, normalized log-ratio of reporter ion intensity to ion intensity from a pooled, common reference  from unshared peptides associated with the gene in acquisitions from a specific aliquot of a biological sample.',placement = "right",options = list(container = "body")),
             checkboxInput("datalogif","1. Log or not?",TRUE),
             selectInput("dataplottype",h5("2. Plot type:"),choices = c("Boxplot","Heatmap")),
             checkboxInput("datazscoreif","3. Z-score or not?",TRUE),
@@ -466,20 +490,22 @@ ui<-renderUI(
               )
             )
           )
-        )
+        ),
+        icon = icon("table")
       ),
+      ##Here shows user manual
       tabPanel(
-        "Database View",
+        "Help",
         sidebarLayout(
           sidebarPanel(
             width = 3,
             h3(
-              "Step4: Database View",#Human proteins
+              "Step 4: User Manual",
               tags$span(
                 id = 'span4',
                 `data-toggle` = "tooltip4",
                 title = '
-                This step will show the databases used in this software and users can download them freely.
+                Here shows the detailed step-by-step operations about this software.
                 ',
                 tags$span(class = "glyphicon glyphicon-question-sign")
               )
@@ -488,302 +514,104 @@ ui<-renderUI(
             radioButtons(
               "databasexz",
               label = NULL,
-              choices = list("1. Topics analysis database" = 1,"2. GO terms used for topics analysis"=2),
+              choices = list("I. Type in a keyword" = 1,"II. Upload data"=2,
+                "III. Topics analysis database" = 3,"IV. GO terms used for topics analysis"=4),
               selected = 1,
               inline = F
             )
           ),
           mainPanel(
             width = 9,
-            h4("Database shown as below:"),
-            downloadButton("databasedatadl","Download"),
-            dataTableOutput("databasedata")
+            conditionalPanel(
+              condition = "input.databasexz==1",
+              div(style="text-align:left;margin-top:15px;font-size:150%;",HTML("<b>I.1 Input data preparation: Type in a keyword</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("In the 'Import Data' part (Step 1), users could type in a gene name (e.g. TNFSF10), or a UniProt ID (e.g. P50591), or a noun (e.g. Liver). For instance, when users input 'TNFSF10', which is a gene name, the parameters should be configured as follows:")
+              ),
+              div(style="text-align:center;margin-top:8px;",a(href='#',img(src='OP1.png',height=500))),
+              div(style="text-align:left;margin-top:15px;font-size:150%;",HTML("<b>I.2 Results</b>")),
+              div(style="text-align:left;margin-top:15px;font-size:130%;",HTML("<b>I.2.1 Ontology-guide Results</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("Herein, Ontolomics-P built a topics database based on the GO database (please refer to the 'III. Topics analysis database' part), aiding in the retrieval of pertinent protein/gene functional information. It outputs two kinds of results:")
+              ),
+              div(style="text-align:left;margin-top:15px;font-size:120%;",HTML("<b>I.2.1.A Original GO functions</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("'Original GO functions' means that this tool retrieves the GO functions of the input keyword (e.g. TNFSF10) and plots word clouds of BPs, MFs and CCs respectively. The results include: <br><u>A.1.</u> Original GO function plots based on the keyword that users type in: Here will show the distribution of the number, word clouds of BPs, MFs and CCs for TNFSF10 respectively. <br><u>A.2.</u> Original GO function table based on the keyword that users type in: Here will show the GO functions of TNFSF10 derived from GO database.<br><u>A.3.</u> Word frequency table of the word clouds in A.1. above: Here shows the word frequency for the world clouds (BP, CC, MF) in figure A.1. above.<br>The results are shown as below:")
+              ),
+              div(style="text-align:center;margin-top:8px;",a(href='#',img(src='OP2.png',height=1500))),
+              div(style="text-align:left;margin-top:15px;font-size:120%;",HTML("<b>I.2.1.B Topics analysis results</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("'Topics analysis results' means that this tool processes topics analysis based on the pre-established topics database (please refer to the 'III. Topics analysis database' part). The results include: <br><u>B.1.</u> The correlation plots between the original GOs and those in each topic: This will show the distribution of the semantic similarity between the keyword’s (e.g. TNFSF10) GO functions and each topic derived from BPs, MFs and CCs, respectively. Then it also exhibits the histogram of the 125 semantic similarity values. <br><u>B.2.</u> The correlation table between the original GOs and those in each topic: This will show the result table of the semantic similarity between the keyword’s (e.g. TNFSF10) GO functions and each topic derived from BPs, MFs and CCs, respectively. The semantic similarity values are used to make the figures above ( The “B.1. The correlation plots between the original GOs and those in each topic” part). <br>The results are shown as below:")
+              ),
+              div(style="text-align:center;margin-top:8px;",a(href='#',img(src='OP3.png',height=1400))),
+              div(style="text-align:left;margin-top:15px;font-size:130%;",HTML("<b>I.2.2 Data-driven Results</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("Herein, Ontolomics-P seamlessly integrates quantitative proteomic data from ten cancer types stored in the CPTAC database. These expression data were downloaded from https://proteomic.datacommons.cancer.gov/pdc/explore-quantitation-data with PDC study identifiers COAD (PDC000116), BRCA (PDC000120), UCEC (PDC000125), ccRCC (PDC000127), LUAD (PDC000153), HECA (PDC000198), HNSCC (PDC000221), PADA (PDC000270), LSCC (PDC000219) and OV (PDC000360). This integration facilitates the efficient review of the expression profiles of proteins of interest (POIs) for researchers. For example, users type in a gene name TNFSF10, the results include: <br><u>A.1.</u> The protein(s) that users type in or upload in the Step 1 is/are displayed in a boxplot or heatmap. As users only type in one gene name here, it shows boxplots for this protein across all selected cancer data.<br><u>A.2.</u> A.2. The protein(s) that users type in or upload in the Step 1 is/are displayed in the volcano plot. As users only type in one gene name here, it shows volcano plots for this protein across all selected cancer data.<br><u>A.3.</u> The gene co-expression network analysis based on expression profiles. This gene co-expression network analysis reveals relationships between the input protein and other strongly correlated proteins (based on absolute Spearman correlation coefficients) across selected cancer datasets.")
+              ),
+              div(style="text-align:center;margin-top:8px;margin-bottom:20px;",a(href='#',img(src='OP4.png',height=1600)))
+            ),
+            conditionalPanel(
+              condition = "input.databasexz==2",
+              div(style="text-align:left;margin-top:15px;font-size:150%;",HTML("<b>II.1 Input data preparation: Upload data</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("In the 'Import Data' part (Step 1), users could also upload/paste a list of POIs (not just a keyword). For instance, when users click the 'C. Load example data', which is a list of protein UniProt IDs, the parameters should be configured as follows:")
+              ),
+              div(style="text-align:center;margin-top:8px;",a(href='#',img(src='OP5.png',height=450))),
+              div(style="text-align:left;margin-top:15px;font-size:150%;",HTML("<b>II.2 Results</b>")),
+              div(style="text-align:left;margin-top:15px;font-size:130%;",HTML("<b>II.2.1 Ontology-guide Results</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("Herein, Ontolomics-P processes classical GO enrichment analysis based on original GO database and Topics enrichment analysis based on the pre-built topics database. Thus it outputs two kinds of results:")
+              ),
+              div(style="text-align:left;margin-top:15px;font-size:120%;",HTML("<b>II.2.1.A Classical GO enrichment analysis</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("'Classical GO enrichment analysis' means that this tool retains classical GO enrichment analysis and semantic similarity analysis to simply the results. The results include: <br><u>A.1.</u> Classical GO enrichment plots based on the IDs/Names that users upload: Here will show the boxplot of the top 20 classical GO enrichment terms and the simplified results of BPs, MFs and CCs of uploaded POIs using heatmaps with word clouds respectively. <br><u>A.2.</u> Classical GO enrichment table based on the IDs/Names that users upload: Here will show the classical GO enrichment result table. <br>The results are shown as below:")
+              ),
+              div(style="text-align:center;margin-top:8px;",a(href='#',img(src='OP6.png',height=1400))),
+              div(style="text-align:left;margin-top:15px;font-size:120%;",HTML("<b>II.2.1.B Topics enrichment analysis</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("'Topics enrichment analysis' means that this tool processes topics enrichment analysis using Fisher's exact test method based on the pre-established topics database (please refer to the 'III. Topics analysis database' part). The results include: <br><u>B.1.</u> The topics enrichment analysis plots: Here will show the meteoric plots based on the topics enrichment analysis results of BPs, MFs and CCs of uploaded POIs respectively. Users could adjust the left '3. Object number for barplot' parameter to control the topics number of the plot. <br><u>B.2.</u> The topics enrichment analysis table: Here will show the topics enrichment analysis result table of BPs, MFs and CCs of uploaded POIs. The meteoric plots above are made based on this table. <br>The results are shown as below:")
+              ),
+              div(style="text-align:center;margin-top:8px;",a(href='#',img(src='OP7.png',height=1400))),
+              div(style="text-align:left;margin-top:15px;font-size:130%;",HTML("<b>II.2.2 Data-driven Results</b>")),
+              div(
+                style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
+                HTML("Herein, Ontolomics-P seamlessly integrates quantitative proteomic data from ten cancer types stored in the CPTAC database. These expression data were downloaded from https://proteomic.datacommons.cancer.gov/pdc/explore-quantitation-data with PDC study identifiers COAD (PDC000116), BRCA (PDC000120), UCEC (PDC000125), ccRCC (PDC000127), LUAD (PDC000153), HECA (PDC000198), HNSCC (PDC000221), PADA (PDC000270), LSCC (PDC000219) and OV (PDC000360). This integration facilitates the efficient review of the expression profiles of proteins of interest (POIs) for researchers. For example, users upload a list of protein UniProt IDs in the 'Import Data' part (Step 1), the results include: <br><u>A.1.</u> The protein(s) that users type in or upload in the Step 1 is/are displayed in a boxplot or heatmap. As users upload a list of proteins here, it shows heatmaps for uploaded proteins across all selected cancer datasets.<br><u>A.2.</u> A.2. The protein(s) that users type in or upload in the Step 1 is/are displayed in the volcano plot. As users a list of proteins here, it shows volcano plots for all uploaded proteins across all selected cancer data.<br><u>A.3.</u> The gene co-expression network analysis based on expression profiles. This gene co-expression network analysis reveals relationships between the uploaded proteins and other strongly correlated proteins (based on absolute Spearman correlation coefficients) across selected cancer datasets.")
+              ),
+              div(style="text-align:center;margin-top:8px;margin-bottom:20px;",a(href='#',img(src='OP8.png',height=1600)))
+            ),
+            conditionalPanel(
+              condition = "input.databasexz==3",
+              h4("III. Topics analysis database: This tool built a topics database based on the GO database using the Latent Dirichlet allocation (LDA) model. Every topic was re-annotated using the GPT-4o language model. Users can check the database from here:"),
+              downloadButton("databasedata3dl","Download"),
+              dataTableOutput("databasedata3")
+            ),
+            conditionalPanel(
+              condition = "input.databasexz==4",
+              h4("IV. GO terms used for topics analysis: This database was implemented using GO.db package (Version 3.17.0, https://doi.org/doi:10.18129/B9.bioc.GO.db). Database shown as below:"),
+              downloadButton("databasedata4dl","Download"),
+              dataTableOutput("databasedata4")
+            )
           )
-        )
-      )#,
-      #tabPanel(
-      #  "Topics Analysis",
-      #  sidebarLayout(
-      #    sidebarPanel(
-      #      width = 3,
-      #      h3(
-      #        "Step 5: Motif Enrichment and Plot",
-      #        tags$span(
-      #          id = 'span5',
-      #          `data-toggle` = "tooltip5",
-      #          title = '
-      #          This step will find overrepresented sequence motifs for uploaded peptides and blasted peptides respectively, then visualize them. Uploaded peptides here means those modified peptides uploaded directly by users.
-      #          Blasted peptides here means those modified peptides mapped to human after blasting.
-      #          ',
-      #          tags$span(class = "glyphicon glyphicon-question-sign")
-      #        )
-      #      ),
-      #      tags$hr(style="border-color: grey;"),
-      #      actionButton("mcsbtn_motifquanbu","Calculate",icon("paper-plane"),
-      #                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
-      #    ),
-      #    mainPanel(
-      #      width = 9,
-      #      h4("")
-      #    )
-      #  )
-      #),
-      #tabPanel(
-      #  "Help",
-      #  navlistPanel(
-      #    id="helpmanualid",
-      #    "Detailed description",
-      #    tabPanel(
-      #      "1. Overview of Ontolomics-P",
-      #      div(style="text-align:left;margin-top:15px;font-size:140%;",HTML("<b>Brief description</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px",
-      #        "Post-translational modification (PTM) proteomics analyses such as phosphoproteomics are often performed in non-human species, whereas site-specific PTM functions and biological annotations are much more established in human than other speices. Ontolomics-P is a web-based platform that built in R (Version 4.1.1), and the graphical user interface was implemented using R Shiny framework (version 1.6.0). In this importamt update, we have implemented three new important functions. 1. Mapping the PTM site and protein sequences and identifiers between non-human species and H. sapiens. The query protein sequences were blasted to the reference proteome sequences of H.sapiens using public and widely used packages such as metabalstr and ClustualW. The resulting alignments were used to convert the sequence positions of detected PTMs in non-human species to positions in H.sapiens protein sequences. 2. Calculating sequence window similarity and allowing thresholds of similarity filtering during the mapping, which can be iteratively performed together with human database-based PTM site annotation so that the users can set flexible thresholds 3. Visualizing the expression of modification sites on interacting proteins on the basis of public or user-uploaded protein-protein interaction (PPI) data. In Ontolomics-P, users can choose to upload a PTM sites expression matrix, as well as a PPI database (e.g. SARS-CoV-2 virus-Human PPI database). Then, this tool can plot the expression of PTM sites on interacting proteins with the igraph package. Notebly, all the previous functions of motifeR 1.0, such as handling data outputs from multiple proteomic software, locating the phosphoproteomic data to PTM site identities in the peptide and protein sequence, ggseqlogo package based visualization of enriched motifs, and illustration of kinase-substrate networks in humans are continued to be fully supported. Furthermore, Ontolomics-P can provide downloadable tables during all analytical steps and figures supporting following data analysis."
-      #      ),
-      #      div(style="text-align:center;margin-top: 8px",
-      #          a(href='#',
-      #            img(src='Figure1app.png',height=450))),
-      #      #div(style="text-align:left;margin-top:20px;font-size:140%;",HTML("<b>1.2 What Ontolomics-P exactly does in each step?</b>")),
-      #      #div(
-      #      #  style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #      #  "As described above, there are four main steps in the data analysis process of Ontolomics-P: (1) Upload of proteomics data; (2) Data quality control;
-      #      #  (3) Missing value imputation; (4) Performance evaluation. However, many users care about the detailed operation in each step.
-      #      #  The figure below shows the major steps of the data analysis process in Ontolomics-P. We take two groups of samples
-      #      #  (five biological replicates in each group, labeled A1, A2, A3, A4, A5, B1, B2, B3, B4, B5 in the original intensity data)
-      #      #  for example. Feature means the identified proteins/peptides."
-      #      #),
-      #      #div(style="text-align:center;margin-top:8px;margin-bottom:30px;",
-      #      #    a(href='#',
-      #      #      img(src='FigureS2app.png',height=1000))),
-      #      icon = icon("dashboard")
-      #    ),
-      #    tabPanel(
-      #      "2. User manual",
-      #      div(style="text-align:left;margin-top:15px;font-size:180%;",HTML("<b>How to use this tool step by step?</b>")),
-      #      div(style="text-align:left;margin-top:15px;font-size:160%;",HTML("<b>Please note: Here is a quite overview about how to use Ontolomics-P. More detailed user manual can be found here: .</b>")),
-      #      div(style="text-align:left;margin-top:20px;font-size:150%;",HTML("<b>2.1 Input data preparation</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        HTML("Ontolomics-P supports five basic file formats (.csv, .txt, .xlsx, .xls and .fasta). Before analysis, users should prepare their peptide sequences with modification.
-      #        The data required here could be readily generated based on results of several popular tools such as <a href='https://www.maxquant.org/' target='_blank'>MaxQuant</a>,
-      #        <a href='https://biognosys.com/shop/spectronaut' target='_blank'>Spectronaut</a>, and so on. Then
-      #        can upload the sequence data into Ontolomics-P with right formats respectively and start subsequent analysis.")
-      #      ),
-      #      div(style="text-align:left;margin-top:10px;font-size:120%;",HTML("<b>2.1.1 Modified peptide sequences with normal type</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        HTML("In this situation, users may mark those modified residues (e.g. S, T, Y with phosphorylation) with some label they like (such as '#' or '@') in advance. The peptide sequences like this (download <a href='https://github.com/wangshisheng/Ontolomics-P/blob/main/inst/Ontolomics-Papp/Normal_Exampledata.csv' target='_blank'>example data</a>):")
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help1.png',height=400))),
-      #      div(style="text-align:left;margin-top:10px;font-size:120%;",HTML("<b>2.1.2 Modified peptide sequences from MaxQuant</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        HTML("If the sequence data are obtained from MaxQuant, then users can found the modified peptide sequences in the modification txt file, for example, the Phospho (STY)Sites.txt file in the output tables from MaxQuant. The peptide sequences like this (download <a href='https://github.com/wangshisheng/Ontolomics-P/blob/main/inst/Ontolomics-Papp/MaxQuant_Exampledata.csv' target='_blank'>example data</a>):")
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help2.png',height=400))),
-      #      div(style="text-align:left;margin-top:10px;font-size:120%;",HTML("<b>2.1.3 Modified peptide sequences from Spectronaut</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        HTML("If the sequence data are obtained from Spectronaut, then users can found the modified peptide sequences in the Standard Report part of Spectronaut, for example, export the Peptide Quant results from the Pivot Report and extract the modified peptide sequeces from the EG.ModifiedSequence column. The peptide sequences like this (download <a href='https://github.com/wangshisheng/Ontolomics-P/blob/main/inst/Ontolomics-Papp/Spectronaut_Exampledata.csv' target='_blank'>example data</a>):")
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help3.png',height=400))),
-      #      div(style="text-align:left;margin-top:10px;font-size:120%;",HTML("<b>2.1.4 Background data</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        HTML("Background data here means the protein sequences (.fasta format). Users should use the same protein sequences file as the background database they obtain the modified peptide sequences from some common software, such as MaxQuant, Spectronaut. For example, users can download the protein sequences from <a href='https://www.uniprot.org/' target='_blank'>UniProt</a>. The protein sequences like this (download <a href='https://github.com/wangshisheng/Ontolomics-P/blob/main/inst/Ontolomics-Papp/fasta/10116.fasta' target='_blank'>example data from Rat</a>):")
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help4.png',height=500))),
-      #      div(style="text-align:left;margin-top:50px;font-size:150%;",HTML("<b>2.2 Operating Procedure of Ontolomics-P (Six steps)</b>")),
-      #      div(style="text-align:left;margin-top:20px;font-size:120%;",HTML("<b>Step 1. Import Sequence Data</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "After preparing required data (please check part 2.1 above), users can click 'Import data' and upload their own data in the left parameter panel:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help5.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "If users do not upload any data, Ontolomics-P will tell them 'Ontolomics-P detects that you did not upload your data. Please upload the sequence data, or load the example data to check first.' in the right result panel. Then they can choose 'Load example data' and download these example data by clicking relative button:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help6.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "For every parameter in the parameter panel, users can check its detailed description when they mouse over this parameter. Shown as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help7.png',width=1200))),
-      #      div(style="text-align:left;margin-top:20px;font-size:130%;",HTML("<b>Step 2. Pre-alignment</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "This step aligns those peptide sequences with the background database (protein sequences) and force the modified sites/residues to be central sites, then users can get the standard peptide window sequences. After selecting suitable methods, users click the 'Calculate' button and obtain results as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help8.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Then users can click the 'Result description' button to check the meaning of each column."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help9.png',width=1200))),
-      #      div(style="text-align:left;margin-top:16px;font-size:130%;",HTML("<b>Step 3. Blast to Human proteins</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "This step will map the PTM site and protein sequences and identifiers between non-human species and Human. After selecting suitable methods, users click the 'Calculate' button and obtain results as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help10.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Similarly, users can also click the 'Result description' button to check the meaning of each column."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help11.png',width=1200))),
-      #      div(style="text-align:left;margin-top:16px;font-size:130%;",HTML("<b>Step 4. Motif Enrichment and Plot</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "This step will find overrepresented sequence motifs for uploaded peptides and blasted peptides respectively, then plot them. Uploaded peptides here means those modified peptides uploaded directly by users.
-      #          Blasted peptides here means those modified peptides mapped to human after blasting. After selecting suitable methods, users click the 'Calculate' button and obtain the motif plot as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help12.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Then the motif table results as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help13.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Similarly, users can also click the 'Result description' button to check the meaning of each column."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help14.png',width=1200))),
-      #      div(style="text-align:left;margin-top:16px;font-size:130%;",HTML("<b>Step 5. Annotation based on Kinase-Substrate database</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "This step will Offer more flexible annotation based on kinase-substrate databases (e.g. PhosphoSitePlus) and network plots. After selecting suitable methods, users click the 'Calculate' button and obtain the annotation results for uploaded peptides as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help15.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "The annotation results for blasted peptides as below, and we can find that users can obtain much more abundant information after mapping to human proteins, for instance, the rows of annotated results of example data become from 278 to 6951."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help16.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Then click 'Node and edge table' panel. The node table and the edge table are used for network plot next. Please note: When the network is large, actually the network plot can not be shown immediately and may be corrupted in the next panel (i.e. Network Plot), thus users can download the two tables and input them into other tools (e.g. Cytoscape)."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help17.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "The network plot is shown as below:"
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help18.png',width=1200))),
-      #      div(style="text-align:left;margin-top:16px;font-size:130%;",HTML("<b>Step 6. Interaction between non-human proteins and human proteins</b>")),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "This step will visualize the expression of modification sites on interacting proteins on the basis of protein-protein interaction data. Users need prepare the PTM site expression data, samples information and interaction data. Users can click 'Load example data' to check first."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help19.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        HTML("For the example data: 1. The expression matrix were obtained using Spectronaut software from the C. sabaeus in COVID research (<a href='https://doi.org/10.1016/j.cell.2020.06.034' target='_blank'>doi: 10.1016/j.cell.2020.06.034</a>). The first column is protein ids (PTM.ProteinId), the second column is modified amino acids (PTM.SiteAA), the third is PTM locations in protein sequeces (PTM.SiteLocation), and the next columns are sample names. The missing values should be replcaed with NA. Therefore, users should also prepare their expression data like this. 2. Users need type in the right samples information about the groups, replicates and group names, for example, there 6 groups and 2, 2, 3, 3, 3, 3 replicates for each group, the group names are 0h, 2h, 4h, 8h, 12h, 24h.
-      #        3. The interaction data were obtained from a SARS-CoV-2 virus-Human PPI database (<a href='https://doi.org/10.1038/s41586-020-2286-9' target='_blank'>doi: 10.1038/s41586-020-2286-9</a>). The first two columns are interacting protein names/IDs (Bait for SARS-CoV-2 virus protein names and Preys for human protein UniProt ids), the third column is protein/gene names for the second column.")
-      #      ),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Then click '2. Processed expression data' panel. Ontolomics-P will process median normalization, missing value imputation with KNN method, log data with base 2 by default."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help20.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:10px;margin-right:20px;",
-      #        "Finally, click '3. Interaction plot' panel. Users can obtain the interacting proteins plot. If users change the '3.5 Select one interacting protein' parameter, they can obtain different interacting proteins plot."
-      #      ),
-      #      div(style="text-align:center;margin-top:8px;",
-      #          a(href='#',
-      #            img(src='help21.png',width=1200))),
-      #      div(
-      #        style="text-align:justify;width:fit-content;width:-webkit-fit-content;width:-moz-fit-content;font-size:120%;margin-top:50px;margin-right:20px;margin-bottom:30px;",
-      #        HTML("If you have any questions, comments or suggestions about Ontolomics-P, please feel free to contact: <u>shishengwang@wchscu.cn</u>. We really appreciate that you use Ontolomics-P, and your suggestions should be valuable to its improvement in the future.")
-      #      ),
-      #      icon = icon("file-alt")
-      #    ),
-      #    widths=c(3,9)
-      #  )#,
-      #  #icon = icon("info-circle")
-      #)
-      #tabPanel(
-      #  "Building Species Database",
-      #  sidebarLayout(
-      #    sidebarPanel(
-      #      width = 3,
-      #      div(id='refastafileif_div',checkboxInput("refastafileif","Re-upload?",FALSE)),
-      #      bsTooltip("refastafileif_div",'This step can build the standard database based on the fata file that users upload, herein there is no species limit. And this results can also be used in "Own background" step. If users want to build their own database, they can select this parameter and then upload a fasta file.',
-      #                placement = "bottom",options = list(container = "body")),
-      #      conditionalPanel(
-      #        condition = "input.refastafileif==true",
-      #        fileInput('fastafile', 'Please upload your fasta file:',accept=c('.fasta'))
-      #      ),
-      #      tags$hr(style="border-color: grey;"),
-      #      actionButton("mcsbtn_fastaalign","Calculate",icon("paper-plane"),
-      #                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
-      #    ),
-      #    mainPanel(
-      #      width = 9,
-      #      fluidRow(
-      #        column(
-      #          2,
-      #          downloadButton("allfastadl","Download")
-      #        ),
-      #        column(
-      #          2,
-      #          actionButton("mcsbtn_resjieshi5","Result description",icon("file-alt"),
-      #                       style="color: black; background-color: #E6E6FA; border-color: #E6E6FA")
-      #        )
-      #      ),
-      #      dataTableOutput("allfasta")
-      #    )
-      #  )
-      #)
+        ),
+        icon = icon("file-alt")
+      )
     )
   )
 )
-#
+##Defining the server-side logic of the Shiny application.
 server<-shinyServer(function(input, output, session){
   options(shiny.maxRequestSize=100*1024^2)
   usertimenum<-as.numeric(Sys.time())
-  #ui
+  ##UI for Welcome page
   output$welcomeui<-renderUI({
     screenwidth<-input$dimension[1]
     #screenheight<-input$dimension[2]
@@ -801,9 +629,8 @@ server<-shinyServer(function(input, output, session){
         imgwidth<-250
       }
     }
-
+    ##Here shows the main contents in the welcom page
     fluidRow(
-      #div(style="text-align:center",h1("~~Welcome~~")),
       div(
         id="mainbody",
         column(3),
@@ -859,7 +686,7 @@ server<-shinyServer(function(input, output, session){
       )
     )
   })
-  #show data
+  ##Here shows species
   output$metabopathspecies<-renderUI({
     metabopath_spedf1<-read.csv("metabopath-species.csv",header = T,stringsAsFactors = F)
     metabopath_spedf<-metabopath_spedf1[-2,]
@@ -873,7 +700,7 @@ server<-shinyServer(function(input, output, session){
     selectizeInput('metabopathspeciesselect2', h5('Species:'), choices =metabopath_spedf_paste2,
                    options = list(maxOptions = 6000))#selected=metabopath_spedf_paste2,
   })
-  #######
+  ##Here shows example data
   exampledataout<-reactive({
     if(input$origidatatype=="MaxQuant"){
       dataread<-read.csv("MaxQuant_Exampledata.csv",stringsAsFactors = F)
@@ -930,6 +757,7 @@ server<-shinyServer(function(input, output, session){
     }
     dataread
   })
+  ##Here shows user's input
   output$seqrawdata<-renderDataTable({
     if(input$loadseqdatatype==1){
       if(input$proinputids==""){
@@ -942,9 +770,9 @@ server<-shinyServer(function(input, output, session){
     }
     datatable(dataread, options = list(pageLength = 10))
   })
-
+  ##Searching for user's input
   originalgotableout<-reactive({
-    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
+    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]
     if(input$loadseqdatatype==1){
       proinputidsx<<-tolower(input$proinputids)
       if(proinputidsx==""){
@@ -964,7 +792,8 @@ server<-shinyServer(function(input, output, session){
               #UNIPROTidsdf<<-cbind(UNIPROTidsdf1[,c(2,3,1)],UNIPROTidsdf2)
               proinputidsx1<-c(which(tolower(UNIPROTidsdf1[[2]])==proinputidsx),
                                which(tolower(UNIPROTidsdf1[[3]])==proinputidsx),
-                               grep(paste0("\\b",proinputidsx,"\\b"),UNIPROTidsdf2[[2]],ignore.case = T,perl = T))
+                               grep(paste0("\\b",proinputidsx,"\\b"),UNIPROTidsdf2[[2]],
+                                    ignore.case = T,perl = T))
               if(length(proinputidsx1)>0){
                 #UNIPROTidsdf1<-UNIPROTidsdf[unique(proinputidsx1),]
                 #dataread<-base::merge(UNIPROTidsdf1,GOTERMdf,by.x="GOALL",by.y="GOID",sort = F)
@@ -984,6 +813,7 @@ server<-shinyServer(function(input, output, session){
     }
     dataread
   })
+  ##Calculating semantic similarity between two GO terms lists
   topicgotableout<-reactive({
     speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
     load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
@@ -1020,6 +850,7 @@ server<-shinyServer(function(input, output, session){
     SSdata<-SSdata[order(SSdata$Semantic.Similarity,decreasing = T),]
     SSdata
   })
+  ##Classical GO enrichment analysis
   originaluploadgotableout<-reactive({
     library(clusterProfiler)
     library(simplifyEnrichment)
@@ -1050,7 +881,8 @@ server<-shinyServer(function(input, output, session){
                        pvalueCutoff = 1, qvalueCutoff = 1)
           yydf<-yy@result
           yydf1<-base::merge(yydf,GOTERMdf,by.x = "ID", by.y = "GOID",sort-FALSE)
-          yydf2<-yydf1[,c(1,12,10,9,3:6,11,8)]
+          yydf2<-yydf1[,c("ID","Ontology","Term","Count","GeneRatio","BgRatio","pvalue","p.adjust",
+                          "Definition","geneID")]#[,c(1,12,10,9,3:6,11,8)]
           #yydf2$BgRatio<-as.numeric(unlist(lapply(yydf2$BgRatio,function(x)strsplit(x,"\\/")[[1]][1])))
           #colnames(yydf2)<-c("GO.IDs","Ontology","Term","Description","Counts","Annotated","pvalue","p.adjust","IDs")
           colnames(yydf2)[c(1,10)]<-c("GO.IDs","Uploaded.IDs")
@@ -1072,7 +904,7 @@ server<-shinyServer(function(input, output, session){
     })
     allRes.df
   })
-  ##
+  ##Topics enrichment analysis
   topicuploadgotableout<-reactive({
     library(clusterProfiler)
     library(simplifyEnrichment)
@@ -1107,7 +939,7 @@ server<-shinyServer(function(input, output, session){
                        pvalueCutoff = 1, qvalueCutoff = 1)
           yytpdf<-yytp@result
           #yytpdf1<-base::merge(yytpdf,GOTERMdf,by.x = "ID", by.y = "GOID",sort-FALSE)
-          yytpdf2<-yytpdf[,c(2,9,3:6,8)]
+          yytpdf2<-yytpdf[,c("ID","Count","GeneRatio","BgRatio","pvalue","p.adjust","geneID")]#[,c(2,9,3:6,8)]
           colnames(yytpdf2)[c(1,7)]<-c("Topics","Uploaded.IDs")
           yytpdf2<-base::merge(yytpdf2,Topic_Allx,by.x = "Topics",by.y = "Terms",sort = F)
           yytpdf2<-yytpdf2[,c(1,8,2:7)]
@@ -1125,6 +957,7 @@ server<-shinyServer(function(input, output, session){
     })
     allRes.tpdf
   })
+  ##Output results (tables and plots) of classical GO enrichment analysis or topics enrichment analysis
   observeEvent(
     input$btn_results,{
       if(input$loadseqdatatype==1){
@@ -1308,7 +1141,54 @@ server<-shinyServer(function(input, output, session){
           dev.off()
         }
       )
-      ##
+      ##Word cloud table
+      wordfreqtableout<-reactive({
+        library(tidytext)
+        library(ggwordcloud)
+        gotabledf<<-originalgotableout()
+        if(ncol(gotabledf)==1){
+          worldcloudtb<-data.frame(Results="Nothing here!")
+        }else{
+          cloudsizex<<-input$cloudsize
+          wordnumberx<<-input$wordnumber
+          proinputidsxx<<-input$proinputids
+          gotabledf<-unique(gotabledf[,c(1,5,6)])
+          gotabledf2<-gotabledf[gotabledf$Ontology=="BP",2,drop=F]%>%tidytext::unnest_tokens(word, Definition)
+          gotabledf2$word <- gsub('[[:punct:]]+', '', gotabledf2$word)
+          gotabledf2 <- gotabledf2 %>% filter(!(nchar(word) == 1))%>%
+            anti_join(stop_words)
+          tokens1 <- gotabledf2 %>% filter(!(word==""))%>%count(word, sort = TRUE)
+          tokens1$Ontology<-"BP"
+          #tokens1<-tokens1[tokens1$n>=wordnumberx,]
+          gotabledf3<-gotabledf[gotabledf$Ontology=="CC",2,drop=F]%>%tidytext::unnest_tokens(word, Definition)
+          gotabledf3$word <- gsub('[[:punct:]]+', '', gotabledf3$word)
+          gotabledf3 <- gotabledf3 %>% filter(!(nchar(word) == 1))%>%
+            anti_join(stop_words)
+          tokens3 <- gotabledf3 %>% filter(!(word==""))%>%count(word, sort = TRUE)
+          tokens3$Ontology<-"CC"
+          #tokens3<-tokens3[tokens3$n>=wordnumberx,]
+          gotabledf4<-gotabledf[gotabledf$Ontology=="MF",2,drop=F]%>%tidytext::unnest_tokens(word, Definition)
+          gotabledf4$word <- gsub('[[:punct:]]+', '', gotabledf4$word)
+          gotabledf4 <- gotabledf4 %>% filter(!(nchar(word) == 1))%>%
+            anti_join(stop_words)
+          tokens4 <- gotabledf4 %>% filter(!(word==""))%>%count(word, sort = TRUE)
+          tokens4$Ontology<-"MF"
+          #tokens4<-tokens4[tokens4$n>=wordnumberx,]
+          worldcloudtb<-rbind(tokens1,tokens3,tokens4)
+        }
+        worldcloudtb
+      })
+      output$wordfreqtable<-renderDataTable({
+        dataread<-wordfreqtableout()
+        datatable(dataread, options = list(pageLength = 10))
+      })
+      output$wordfreqtabledl<-downloadHandler(
+        filename = function(){paste("WordCloud.table.",usertimenum,".csv",sep="")},
+        content = function(file){
+          write.csv(wordfreqtableout(),file,row.names=FALSE)
+        }
+      )
+      ##Output topics analysis results
       output$topicgotable<-renderDataTable({
         dataread<-topicgotableout()
         datatable(dataread, options = list(pageLength = 10))
@@ -1319,6 +1199,7 @@ server<-shinyServer(function(input, output, session){
           write.csv(topicgotableout(),file,row.names=FALSE)
         }
       )
+      ##Showing Semantic Similarity histgram
       output$topicgoplot<-renderPlot({
         topicgodf1<-topicgodf<<-topicgotableout()
         topicgodf1$Topics<-factor(topicgodf$Topics,levels = topicgodf$Topics)
@@ -1417,6 +1298,7 @@ server<-shinyServer(function(input, output, session){
           write.csv(originaluploadgotableout(),file,row.names=FALSE)
         }
       )
+      ##classical GO similarity analysis
       output$originaluploadgoplot<-renderPlot({
         library(cowplot)
         library(grid)
@@ -1548,6 +1430,7 @@ server<-shinyServer(function(input, output, session){
           write.csv(topicuploadgotableout(),file,row.names=FALSE)
         }
       )
+      ##The topics enrichment analysis plots
       output$topicuploadgoplot<-renderPlot({
         topicuploadgodf1<-topicuploadgodf<<-topicuploadgotableout()
         topicuploadgodf1$GeneRatio<-unlist(lapply(topicuploadgodf$GeneRatio,function(x){
@@ -1630,6 +1513,7 @@ server<-shinyServer(function(input, output, session){
   #
   #  }
   #)
+  ##Loading Protein/Gene Name database
   datadrivendfout<-reactive({
     speciesid<-"9606"
     if(input$loadseqdatatype==1){
@@ -1705,6 +1589,7 @@ server<-shinyServer(function(input, output, session){
   observeEvent(
     input$btn_dataresults,{
       shinyjs::show(id = "resultsxuanze2_btn", anim = FALSE)
+      ##Boxplot/Heatmap for input proteins/gene name based on CPTAC database
       output$boxheatplot<-renderPlot({
         datadrivendf<<-datadrivendfout()
         if(is.null(datadrivendf)){
@@ -1981,7 +1866,7 @@ server<-shinyServer(function(input, output, session){
           dev.off()
         }
       )
-      ##
+      ##Volcano plot for input proteins/gene name based on CPTAC database
       output$volcanoplot<-renderPlotly({
         datadrivendf<<-datadrivendfout()
         if(is.null(datadrivendf)){
@@ -2308,7 +2193,7 @@ server<-shinyServer(function(input, output, session){
         }
         tableres
       })
-      ##
+      ##Output statistical results for input proteins/gene name based on CPTAC database
       output$volcanoplotdata<-renderDataTable({
         dataread<<-volcanoplotdataout()
         if(names(dataread)[1]=="Nothing"){
@@ -2325,7 +2210,7 @@ server<-shinyServer(function(input, output, session){
           write.xlsx(volcanoplotdataout(),file,rowNames=TRUE)
         }
       )
-      ##
+      ##Network plot for input proteins/gene name based on CPTAC database
       output$conetworkplot<-renderPlot({
         #library(qgraph)
         #load(file = paste0("database/MEGENA.cancer.output.rdata"))
@@ -2521,26 +2406,35 @@ server<-shinyServer(function(input, output, session){
       )
     }
   )
-  databasedataout<-reactive({
-    speciesid<<-strsplit(input$wuzhongid,"-")[[1]][1]#input$wuzhongid 9606-Human
-    if(input$databasexz==1){
-      load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
-      dbdata<-Topic_Allx
-    }else{
-      load(file = "database/GOTERMdf.rdata")
-      dbdata<-GOTERMdf
-    }
-    dbdata
+  ##Showing topic ontology database
+  databasedata3out<-reactive({
+    load(file = paste0("database/Topic_All_top20_","9606",".rdata"))#speciesid
+    Topic_Allx
   })
-  output$databasedata<-renderDataTable({
-    datatable(databasedataout(), options = list(pageLength = 10))
+  output$databasedata3<-renderDataTable({
+    datatable(databasedata3out(), options = list(pageLength = 10))
   })
-  output$databasedatadl<-downloadHandler(
-    filename = function(){paste("DatabaseUsed.",usertimenum,".csv",sep="")},
+  output$databasedata3dl<-downloadHandler(
+    filename = function(){paste("Topic.Database.Used.",usertimenum,".csv",sep="")},
     content = function(file){
-      write.csv(databasedataout(),file,row.names = F)
+      write.csv(databasedata3out(),file,row.names = F)
     }
   )
-})
+  ##Showing GO database
+  databasedata4out<-reactive({
+    load(file = "database/GOTERMdf.rdata")
+    GOTERMdf
+  })
+  output$databasedata4<-renderDataTable({
+    datatable(databasedata4out(), options = list(pageLength = 10))
+  })
+  output$databasedata4dl<-downloadHandler(
+    filename = function(){paste("GO.Database.Used.",usertimenum,".csv",sep="")},
+    content = function(file){
+      write.csv(databasedata4out(),file,row.names = F)
+    }
+  )
 
+})
+##Creating a Shiny app object
 shinyApp(ui = ui, server = server)
